@@ -5,8 +5,8 @@ import time
 import random
 
 WIDTH, HEIGHT = 800, 600
-BALL_SPEED = 5
-PADDLE_SPEED = 10
+BALL_SPEED = 4
+PADDLE_SPEED = 7
 COUNTDOWN_START = 3
 
 class GameServer:
@@ -44,7 +44,12 @@ class GameServer:
                     if data == "UP":
                         self.paddles[pid] = max(60, self.paddles[pid] - PADDLE_SPEED)
                     elif data == "DOWN":
-                        self.paddles[pid] = min(HEIGHT - 100, self.paddles[pid] + PADDLE_SPEED)
+                        self.paddles[pid] = min(HEIGHT - 100, self.paddles[pid] + PADDLE_SPEED)  
+                    elif data == "RESTART":  
+                        self.reset_game_state()  
+                        if not hasattr(self, "ball_thread") or not self.ball_thread.is_alive(): 
+                            self.ball_thread = threading.Thread(target= self.ball_logic, daemon = True) 
+                            self.ball_thread.start() 
         except:
             with self.lock:
                 self.connected[pid] = False
@@ -135,15 +140,21 @@ class GameServer:
                 time.sleep(0.1)
 
             print(f"Гравець {self.winner} переміг!")
-            time.sleep(5)
+            
+            wait_time = 30 
+            while wait_time > 0 and all (self.connected.values()): 
+                time.sleep(1) 
+                wait_time -= 1 
+                if not self.game_over: 
+                    break 
 
-            # Закриваємо старі з'єднання
-            for pid in [0, 1]:
-                try:
-                    self.clients[pid].close()
-                except:
-                    pass
-                self.clients[pid] = None
-                self.connected[pid] = False
+            if self.game_over: 
+                for pid in [0, 1]:
+                    try:
+                        self.clients[pid].close()
+                    except:
+                        pass
+                    self.clients[pid] = None
+                    self.connected[pid] = False
 
 GameServer().run()
