@@ -48,10 +48,10 @@ try:
     assets["ball"] = image.load("pingpong ball.png") 
     assets["ball"] = transform.scale(assets["ball"], (40, 40)) 
     assets["paddle1"] = image.load("paddle1.png")
-    assets["paddle1"] = transform.scale(assets["paddle1"], (60, 80))
+    assets["paddle1"] = transform.scale(assets["paddle1"], (60, 100))
 
     assets["paddle2"] = image.load("paddle2.png")
-    assets["paddle2"] = transform.scale(assets["paddle2"], (60, 80))
+    assets["paddle2"] = transform.scale(assets["paddle2"], (60, 100))
 except Exception as e: 
     print(f"помилка при завантажені: {e}") 
     assets = {}

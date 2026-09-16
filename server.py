@@ -9,6 +9,10 @@ BALL_SPEED = 6
 PADDLE_SPEED = 10
 COUNTDOWN_START = 3
 
+BALL_RADIUS = 20
+PADDLE_WIDTH = 60
+PADDLE_HEIGHT = 100
+
 class GameServer:
     def __init__(self, host='localhost', port=8080):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,12 +48,14 @@ class GameServer:
                     if data == "UP":
                         self.paddles[pid] = max(60, self.paddles[pid] - PADDLE_SPEED)
                     elif data == "DOWN":
-                        self.paddles[pid] = min(HEIGHT - 100, self.paddles[pid] + PADDLE_SPEED)  
-                    elif data == "RESTART":  
-                        self.reset_game_state()  
-                        if not hasattr(self, "ball_thread") or not self.ball_thread.is_alive(): 
-                            self.ball_thread = threading.Thread(target= self.ball_logic, daemon = True) 
-                            self.ball_thread.start() 
+                        self.paddles[pid] = min(HEIGHT - PADDLE_HEIGHT, self.paddles[pid] + PADDLE_SPEED)
+                    elif data == "RESTART":
+                        self.reset_game_state()
+                        if not hasattr(self, "ball_thread") or not self.ball_thread.is_alive():
+                            self.ball_thread = threading.Thread(target = self.ball_logic, daemon = True)
+                            self.ball_thread.start()
+
+
         except:
             with self.lock:
                 self.connected[pid] = False
@@ -89,10 +95,26 @@ class GameServer:
                     self.ball['vy'] *= -1
                     self.sound_event = "wall_hit"
 
-                if (self.ball['x'] <= 40 and self.paddles[0] <= self.ball['y'] <= self.paddles[0] + 100) or \
-                   (self.ball['x'] >= WIDTH - 40 and self.paddles[1] <= self.ball['y'] <= self.paddles[1] + 100):
-                    self.ball['vx'] *= -1
-                    self.sound_event = 'platform_hit'
+                # Ліва ракетка
+                if (
+                    self.ball["vx"] < 0 and
+                    self.ball["x"] - BALL_RADIUS <= 80 and
+                    self.ball["y"] + BALL_RADIUS >= self.paddles[0] and
+                    self.ball["y"] - BALL_RADIUS <= self.paddles[0] + PADDLE_HEIGHT
+                ):
+                    self.ball["x"] = 80 + BALL_RADIUS
+                    self.ball["vx"] *= -1
+                    self.sound_event = "platform_hit"
+                elif (
+                    self.ball["vx"] > 0 and
+                    self.ball["x"] + BALL_RADIUS >= WIDTH - 80 and
+                    self.ball["y"] + BALL_RADIUS >= self.paddles[1] and
+                    self.ball["y"] - BALL_RADIUS <= self.paddles[1] + PADDLE_HEIGHT
+                ):
+                    self.ball["x"] = WIDTH - 80 - BALL_RADIUS
+                    self.ball["vx"] *= -1
+                    self.sound_event = "platform_hit"
+                    
 
                 if self.ball['x'] < 0:
                     self.scores[1] += 1
@@ -140,15 +162,16 @@ class GameServer:
                 time.sleep(0.1)
 
             print(f"Гравець {self.winner} переміг!")
-            
-            wait_time = 30 
-            while wait_time > 0 and all (self.connected.values()): 
-                time.sleep(1) 
-                wait_time -= 1 
-                if not self.game_over: 
-                    break 
 
-            if self.game_over: 
+            wait_time = 30
+            while wait_time > 0 and all(self.connected.values()):
+                time.sleep(1)
+                wait_time -= 1
+                if not self.game_over:
+                    break
+
+            if self.game_over:
+                # Закриваємо старі з'єднання
                 for pid in [0, 1]:
                     try:
                         self.clients[pid].close()
