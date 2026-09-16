@@ -5,8 +5,8 @@ import time
 import random
 
 WIDTH, HEIGHT = 800, 600
-BALL_SPEED = 4
-PADDLE_SPEED = 7
+BALL_SPEED = 6
+PADDLE_SPEED = 10
 COUNTDOWN_START = 3
 
 class GameServer:
